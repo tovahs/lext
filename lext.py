@@ -1,5 +1,7 @@
 import re
 import numpy as np
+from tqdm import tqdm
+
 
 def bigram_frequency(word_list):
     """ Get character bigram frequency from list of words.
