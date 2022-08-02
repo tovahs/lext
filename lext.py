@@ -1,7 +1,7 @@
 import re
 import numpy as np
 from tqdm import tqdm
-
+from scipy.spatial import KDTree
 
 def bigram_frequency(word_list):
     """ Get character bigram frequency from list of words.
@@ -169,3 +169,86 @@ def oup(word_list):
     
 
 #print(oup(['cat', 'ca', 'cats', 'catalouge', 'catz']))
+
+def normalize(a):
+    """Min-max normalize a list
+
+    Input:  a: list
+
+    Output: list of normalized values
+    """
+
+    amax = max(a)
+    amin = min(a)
+    
+    anorm = [(x - amin) / (amax - amin) for x in a]
+
+    return(anorm)
+
+
+def balance(con, candidates, lexicon, columns=None):
+    """Generate balanced subset of stimuli based on opposing condition, from list of all possible options.
+
+    Input:  con: list of words
+            candidates: candidate words
+            lexicon: pandas df lexicon both con and candidates are pulled from (for normalizaton)
+            columns: list of column names for lexicon (optional)
+
+    Output: 
+            array: sugjested condition
+    """
+
+    # Get columns
+    if columns == None:
+        columns = [x for x in lexicon[lexicon.columns[1:]] if pd.api.types.is_numeric_dtype(lexicon[x])]
+        print(f"Columns being used for similarity calculation are: {', '.join([x for x in columns])}\n")
+
+    else:
+        for column in columns:
+            if not pd.api.types.is_numeric_dtype(lexicon[column]):
+                raise Exception("Input columns are not numeric.")
+
+
+    # Normalize
+    for column in columns:
+        lexicon[column] = normalize(lexicon[column])
+    
+    # Get normalized condition and candidate items
+    con_norm = lexicon.loc[con]
+    candidates_norm = lexicon.loc[candidates]
+
+    # Build KD Tree
+    kdTree = KDTree(candidates_norm[columns])
+
+    matched_items = []
+
+    for word in con:
+        word_data = con_norm.loc[word][columns]
+        dd, ii = (kdTree.query(word_data, k=2))
+        matched_items.append(lexicon.index.tolist()[ii[1]])
+
+    matched = lexicon.loc[matched_items]
+
+    print("\nSugjested Condition Items")
+    print(matched, '\n')
+    print("Condition Means")
+    print(con_norm.describe().loc['mean'])
+
+    print("\nSugjested Matched Means")
+    print(matched.describe().loc['mean'])
+
+    return(matched)
+
+
+    
+
+# Testing for stimuli balancing
+if __name__ == "__main__":
+
+    stimuli = ['canal', 'caper', 'cargo']
+    lexicon = pd.read_csv('engstim.csv', index_col='word')
+    candidates = lexicon.index.tolist()
+    
+    # filter out NA values
+    lexicon.dropna()
+    balance(stimuli, candidates, lexicon)#, columns=['bg_freq', 'word_freq', 'lev_avg'])
