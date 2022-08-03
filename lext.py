@@ -187,7 +187,7 @@ def normalize(a):
     return(anorm)
 
 
-def balance(con, candidates, lexicon, columns=None):
+def balance(con, candidates, lexicon, columns=None, verbose=True):
     """Generate balanced subset of stimuli based on opposing condition, from list of all possible options.
 
     Input:  con: list of words
@@ -198,6 +198,9 @@ def balance(con, candidates, lexicon, columns=None):
     Output: 
             array: sugjested condition
     """
+
+    # Seems to a segfualt but I'm not sure why
+    candidates = candidates[:-1]
 
     # Get columns
     if columns == None:
@@ -218,30 +221,35 @@ def balance(con, candidates, lexicon, columns=None):
     con_norm = lexicon.loc[con]
     candidates_norm = lexicon.loc[candidates]
 
-    # Build KD Tree
-    kdTree = KDTree(candidates_norm[columns])
+    # Combine con and candidates to prevent segfault
+    candidates_norm = pd.concat([con_norm, candidates_norm]).drop_duplicates().reset_index(drop=True)
 
+    kdTree = KDTree(candidates_norm[columns])
     matched_items = []
 
+    # Loop through words in condition
     for word in con:
         word_data = con_norm.loc[word][columns]
         dd, ii = (kdTree.query(word_data, k=2))
-        matched_items.append(lexicon.index.tolist()[ii[1]])
+
+        # Need second item (first will be distance zero since it's the same item)
+        matched_items.append(candidates[ii[1]])
 
     matched = lexicon.loc[matched_items]
 
-    print("\nSugjested Condition Items")
-    print(matched, '\n')
-    print("Condition Means")
-    print(con_norm.describe().loc['mean'])
+    if verbose == True:
+        print("\nSugjested Condition Items")
+        print(matched, '\n')
+        print("Condition Means")
+        print(con_norm.describe().loc['mean'])
 
-    print("\nSugjested Matched Means")
-    print(matched.describe().loc['mean'])
+        print("\nSugjested Matched Means")
+        print(matched.describe().loc['mean'])
 
     return(matched)
 
 
-    
+"""
 
 # Testing for stimuli balancing
 if __name__ == "__main__":
@@ -253,3 +261,4 @@ if __name__ == "__main__":
     # filter out NA values
     lexicon.dropna()
     balance(stimuli, candidates, lexicon)#, columns=['bg_freq', 'word_freq', 'lev_avg'])
+"""
