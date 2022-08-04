@@ -49,7 +49,8 @@ This function should create a matched set that has similar variation as the orig
 - con: list of words, condition to be matched to
 - candidates: candidate words
 - lexicon: pandas df lexicon both con and candidates are pulled from (for normalizaton)
-- columns: list of column names for lexicon (optional)
+- columns (optional): list of column names for lexicon. Otherwise function considers all numeric columns
+- verbose (optional), default True: Outputs stimuli stats
     
 **Output**: lists of sugjested stimuli for matched condition
 
