@@ -284,6 +284,7 @@ def random_balance(con, candidates, lexicon, itr=300, columns=None, verbose=True
     # Pick random set of items that is the same size as the simuli set
     items = candidates_norm.sample(n=len(con))
 
+    candidates_norm.drop(labels=items.index.tolist(), inplace=True)
     # Get stats on condition
     con_mean = con_norm.mean()
 
@@ -314,9 +315,13 @@ def random_balance(con, candidates, lexicon, itr=300, columns=None, verbose=True
                 item_candidates = candidates_norm[candidates_norm[max_diff] > con_mean[max_diff]]
             
             # Drop old item, add new item
+            new_item = item_candidates.sample(n=1)
+            candidates_norm.drop(labels=new_item.index.tolist(), inplace=True)
+
+            items = pd.concat([items, new_item])
             items.drop(inplace=True, index=item_max)
             
-            items = pd.concat([items, item_candidates.sample()])
+            
 
             pbar.update(1)
         
