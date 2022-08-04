@@ -189,6 +189,7 @@ def normalize(a):
 
 def balance(con, candidates, lexicon, columns=None, verbose=True):
     """Generate balanced subset of stimuli based on opposing condition, from list of all possible options.
+        Uses pair matching to pick best candidates.
 
     Input:  con: list of words
             candidates: candidate words
@@ -248,17 +249,99 @@ def balance(con, candidates, lexicon, columns=None, verbose=True):
 
     return(matched)
 
+def random_balance(con, candidates, lexicon, itr=300, columns=None, verbose=True):
+    """Generate balanced subset of stimuli based on opposing condition, from list of all possible options.
+        Cycles through elminiating farthest outlier from con average each cycle.
 
+    Input:  con: list of words
+            candidates: candidate words
+            lexicon: pandas df lexicon both con and candidates are pulled from (for normalizaton)
+            columns (optional): list of column names for lexicon. When set to None, calculation is based on all numeric columns passed.
+            itr (optional): Number of balancing cycles
+
+    Output: 
+            array: sugjested condition
+    """
+
+    # Get columns
+    if columns == None:
+        columns = [x for x in lexicon[lexicon.columns[1:]] if pd.api.types.is_numeric_dtype(lexicon[x])]
+        print(f"Columns being used for similarity calculation are: {', '.join([x for x in columns])}\n")
+
+    else:
+        for column in columns:
+            if not pd.api.types.is_numeric_dtype(lexicon[column]):
+                raise Exception("Input columns are not numeric.")
+    
+    # Normalize
+    for column in columns:
+        lexicon[column] = normalize(lexicon[column])
+    
+    # Get normalized condition and candidate items
+    con_norm = lexicon.loc[con]
+    candidates_norm = lexicon.loc[candidates]
+
+    # Pick random set of items that is the same size as the simuli set
+    items = candidates_norm.sample(n=len(con))
+
+    # Get stats on condition
+    con_mean = con_norm.mean()
+
+    # For x in range(itr):
+    with tqdm(total=itr) as pbar:
+        for x in range(itr):
+
+            # Calcualte differences between con column averages and set column averages
+            diff = items.mean().subtract(con_mean)
+            diff_abs = diff.abs()
+
+            # Find highest difference 
+            max_diff = diff_abs.idxmax() # column name with furthest outlier
+
+            # Find item with highest value in set
+            # If max variation is above average
+            if diff[max_diff] <= 0:
+
+                # Get largest outlier item
+                item_max = items[max_diff].idxmax()
+                # Randomly select new item out of set of items below the average
+                item_candidates = candidates_norm[candidates_norm[max_diff] < con_mean[max_diff]]
+
+            # If max variation is below average
+            else:
+                item_max = items[max_diff].idxmin()
+                # Randomly select new item out of set of items above the average
+                item_candidates = candidates_norm[candidates_norm[max_diff] > con_mean[max_diff]]
+            
+            # Drop old item, add new item
+            items.drop(inplace=True, index=item_max)
+            
+            items = pd.concat([items, item_candidates.sample()])
+
+            pbar.update(1)
+        
+        if verbose == True:
+            print("\nSugjested Condition Items")
+            print(items, '\n')
+            print("Condition Means")
+            print(con_norm.describe().loc['mean'])
+
+            print("\nSugjested Matched Means")
+            print(items.describe().loc['mean'])
+        
+    return(items.index)
+
+
+    
 """
-
 # Testing for stimuli balancing
 if __name__ == "__main__":
 
     stimuli = ['canal', 'caper', 'cargo']
-    lexicon = pd.read_csv('engstim.csv', index_col='word')
+    lexicon = pd.read_csv('../engstim.csv', index_col='word')
     candidates = lexicon.index.tolist()
     
     # filter out NA values
     lexicon.dropna()
-    balance(stimuli, candidates, lexicon)#, columns=['bg_freq', 'word_freq', 'lev_avg'])
+    random_balance(stimuli, candidates, lexicon, itr=300)#, columns=['bg_freq', 'word_freq', 'lev_avg'])
 """

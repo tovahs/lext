@@ -41,7 +41,9 @@ Example:
 **Returns**: list of word, avg frequency sublists
 
 ### balance
-Generates a matched condition based on an input condition, based on multiple variables
+Generates a matched condition based on an input condition, based on multiple variables.
+This function works by treating each word's lexical variables as coordinates, and then searches for the closest neighrbor in that multidemensinal space.
+This function should create a matched set that has similar variation as the original set, but might not get as close of a match.
 
 **Input:** 
 - con: list of words, condition to be matched to
@@ -91,3 +93,19 @@ Using this lexicon, we can select the best words to balance the stimuli:
     Name: mean, dtype: float64
 
 The output tells you the words selected to match, as well as shows the averages for each variable associated with both the list to match and the selected items.
+
+### random_balance
+Generate balanced subset of stimuli based on opposing condition, from list of all possible options.
+Cycles through elminiating farthest outlier from con average each cycle.
+
+**Input**:  
+- con: list of words
+- candidates: candidate words
+- lexicon: pandas df lexicon both con and candidates are pulled from (for normalizaton)
+- columns (optional): list of column names for lexicon. When set to None, calculation is based on all numeric columns passed.
+- itr (optional): Number of balancing cycles
+
+**Output**: list: sugjested condition
+
+For an example, see balance.
+
