@@ -221,14 +221,14 @@ def balance(con, candidates, lexicon, columns=None, verbose=True):
             if not pd.api.types.is_numeric_dtype(lexicon[column]):
                 raise Exception("Input columns are not numeric.")
 
-
+    lexicon_norm = lexicon.copy()
     # Normalize
     for column in columns:
-        lexicon[column] = normalize(lexicon[column], method='sd')
+        lexicon_norm[column] = normalize(lexicon_norm[column], method='sd')
     
     # Get normalized condition and candidate items
-    con_norm = lexicon.loc[con]
-    candidates_norm = lexicon.loc[candidates]
+    con_norm = lexicon_norm.loc[con]
+    candidates_norm = lexicon_norm.loc[candidates]
 
     # Combine con and candidates to prevent segfault
     #candidates_norm = pd.concat([con_norm, candidates_norm]).drop_duplicates().reset_index(drop=True)
@@ -244,7 +244,7 @@ def balance(con, candidates, lexicon, columns=None, verbose=True):
         # Need second item (first will be distance zero since it's the same item)
         matched_items.append(candidates[ii[1]])
 
-    matched = lexicon.loc[matched_items]
+    matched = lexicon_norm.loc[matched_items]
 
     if verbose == True:
         print("\nSugjested Condition Items")
@@ -266,6 +266,7 @@ def random_balance(con, candidates, lexicon, itr=300, columns=None, verbose=True
             lexicon: pandas df lexicon both con and candidates are pulled from (for normalizaton)
             columns (optional): list of column names for lexicon. When set to None, calculation is based on all numeric columns passed.
             itr (optional): Number of balancing cycles
+            verbose (optional): Output condition list and descriptive stats
 
     Output: 
             array: sugjested condition
@@ -281,13 +282,15 @@ def random_balance(con, candidates, lexicon, itr=300, columns=None, verbose=True
             if not pd.api.types.is_numeric_dtype(lexicon[column]):
                 raise Exception("Input columns are not numeric.")
     
+    lexicon_norm = lexicon.copy()
+
     # Normalize
     for column in columns:
-        lexicon[column] = normalize(lexicon[column], method='sd')
+        lexicon_norm[column] = normalize(lexicon_norm[column], method='sd')
     
     # Get normalized condition and candidate items
-    con_norm = lexicon.loc[con]
-    candidates_norm = lexicon.loc[candidates]
+    con_norm = lexicon_norm.loc[con]
+    candidates_norm = lexicon_norm.loc[candidates]
 
     # Pick random set of items that is the same size as the simuli set
     items = candidates_norm.sample(n=len(con))
