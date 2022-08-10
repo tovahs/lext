@@ -2,7 +2,7 @@ import re
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from scipy.spatial import KDTree
+from scipy.spatial import cKDTree
 
 def bigram_frequency(word_list):
     """ Get character bigram frequency from list of words.
@@ -171,18 +171,26 @@ def oup(word_list):
 
 #print(oup(['cat', 'ca', 'cats', 'catalouge', 'catz']))
 
-def normalize(a):
+def normalize(a, method="mm"):
     """Min-max normalize a list
-
     Input:  a: list
-
+            method (optional): mm for minmax, sd for standard
     Output: list of normalized values
     """
 
-    amax = max(a)
-    amin = min(a)
-    
-    anorm = [(x - amin) / (amax - amin) for x in a]
+    if method == "mm":
+
+        amax = max(a)
+        amin = min(a) 
+        
+        anorm = [(x - amin) / (amax - amin) for x in a]
+
+    if method == 'sd':
+        avg = np.mean(a)
+        std = np.nanstd(a)
+
+        anorm = [(x - avg) / std for x in a ]
+
 
     return(anorm)
 
@@ -216,16 +224,16 @@ def balance(con, candidates, lexicon, columns=None, verbose=True):
 
     # Normalize
     for column in columns:
-        lexicon[column] = normalize(lexicon[column])
+        lexicon[column] = normalize(lexicon[column], method='sd')
     
     # Get normalized condition and candidate items
     con_norm = lexicon.loc[con]
     candidates_norm = lexicon.loc[candidates]
 
     # Combine con and candidates to prevent segfault
-    candidates_norm = pd.concat([con_norm, candidates_norm]).drop_duplicates().reset_index(drop=True)
+    #candidates_norm = pd.concat([con_norm, candidates_norm]).drop_duplicates().reset_index(drop=True)
 
-    kdTree = KDTree(candidates_norm[columns])
+    kdTree = cKDTree(candidates_norm[columns].to_numpy())
     matched_items = []
 
     # Loop through words in condition
@@ -275,7 +283,7 @@ def random_balance(con, candidates, lexicon, itr=300, columns=None, verbose=True
     
     # Normalize
     for column in columns:
-        lexicon[column] = normalize(lexicon[column])
+        lexicon[column] = normalize(lexicon[column], method='sd')
     
     # Get normalized condition and candidate items
     con_norm = lexicon.loc[con]
