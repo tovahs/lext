@@ -33,6 +33,7 @@ dependencies:
   - six=1.16.0=pyhd3eb1b0_1
   - sqlite=3.38.5=h707629a_0
   - tk=8.6.12=h5d9f67b_0
+  - tqdm=4.64.0=py310hecd8cb5_0
   - tzdata=2022a=hda174b7_0
   - wheel=0.37.1=pyhd3eb1b0_0
   - xz=5.2.5=hca72f7f_1
